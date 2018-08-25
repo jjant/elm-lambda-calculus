@@ -68,8 +68,11 @@ lambda : Parser Expr
 lambda =
     succeed (\pargs body -> List.foldr Lam body pargs)
         |. symbol "\\"
+        |. spaces
         |= args
+        |. spaces
         |. symbol "."
+        |. spaces
         |= lazy (\_ -> expr)
 
 
@@ -77,44 +80,42 @@ term : Parser Expr
 term =
     oneOf
         [ lazy (\_ -> parens expr)
-        , var
-        , lit
-        , lambda
+        , lazy (\_ -> var)
+        , lazy (\_ -> lit)
+        , lazy (\_ -> lambda)
         ]
+
+
+flip f a b =
+    f b a
 
 
 expr : Parser Expr
 expr =
-    succeed
-        (\t ts ->
-            case List.reverse ts of
-                [] ->
-                    List.foldl App t []
-
-                x :: xs ->
-                    List.foldl App x (xs ++ [ t ])
-        )
-        |= term
+    succeed (List.foldl (\a ac -> App ac a))
+        -- App :: Expr -> Expr -> Expr
+        |= lazy (\_ -> term)
         |. spaces
         |= loop [] exprHelp
 
 
 exprHelp : List Expr -> Parser (Step (List Expr) (List Expr))
-exprHelp revStmts =
+exprHelp revExprs =
     oneOf
-        [ succeed (\stmt -> Loop (stmt :: revStmts))
-            |= term
+        [ succeed (\exp -> Loop (exp :: revExprs))
+            |= lazy (\_ -> term)
             |. spaces
         , succeed ()
-            |> map (\_ -> Done (List.reverse revStmts))
+            |> map (\_ -> Done (List.reverse revExprs))
         ]
 
 
 contents : Parser a -> Parser a
 contents p =
     succeed identity
+        |. spaces
         |= p
-        |. end
+        |. spaces
 
 
 parseExpr : String -> Result String Expr

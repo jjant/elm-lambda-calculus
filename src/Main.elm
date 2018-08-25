@@ -8,10 +8,6 @@ import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Lambda exposing (Expr(..), Lit(..))
 import Eval exposing (getSteps)
-
-
--- import CmdLine exposing (runEval, process, prettySteps)
-
 import CmdLine exposing (..)
 import Util exposing (takeLast)
 
@@ -19,9 +15,7 @@ import Util exposing (takeLast)
 terminalWindow =
     [ ( "margin", "0 auto" )
     , ( "width", "600px" )
-    , ( "height", "400px" )
-    , ( "tex-align", "left" )
-    , ( "margin-top", "15px" )
+    , ( "text-align", "left" )
     , ( "postion", "relative" )
     , ( "border-radius", "10px" )
     , ( "background-color", "#0D1F2D" )
@@ -30,7 +24,13 @@ terminalWindow =
     ]
 
 
-terminal_window_header =
+terminalWindowBody =
+    [ ( "padding-top", "10px" )
+    , ( "height", "400px" )
+    ]
+
+
+terminalWindowHeader =
     [ ( "background-color", "#E0E8F0" )
     , ( "height", "30px" )
     , ( "border-radius", "8px 8px 0 0" )
@@ -38,7 +38,7 @@ terminal_window_header =
     ]
 
 
-terminal_window_button =
+terminalWindowButton =
     [ ( "width", "12px" )
     , ( "height", "12px" )
     , ( "margin", "10px 4px 0 0" )
@@ -123,7 +123,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeText text ->
-            ( { model | textInput = text }, Cmd.none )
+            ( { model | textInput = model.textInput ++ " " ++ text }, Cmd.none )
 
         KeyPressed t ->
             ( { model | textInput = model.textInput ++ t }, Cmd.none )
@@ -147,45 +147,87 @@ renderResult code =
         div [] [ text ("> " ++ code) ] :: (List.map renderStep (process code))
 
 
+
+-- div [] [ text ("> " ++ code) ] :: (List.map (renderStep << Debug.toString) (parseAndSteps code))
+
+
 view model =
-    div []
-        [ terminal model
-        , examples
-        ]
+    let
+        styles =
+            [ ( "display", "flex" )
+            , ( "align-items", "center" )
+            , ( "margin-top", "60px" )
+            ]
+    in
+        div (oldStyle styles)
+            [ terminal model
+            , examples
+            ]
 
 
 terminal { textInput, history } =
     div (oldStyle terminalWindow)
-        [ header (oldStyle terminal_window_header)
-            [ div (oldStyle (red_btn ++ terminal_window_button))
-                []
-            , div (oldStyle (green_btn ++ terminal_window_button))
-                []
-            , div (oldStyle (yellow_btn ++ terminal_window_button))
-                []
-            ]
-        , div (oldStyle terminalWindow)
-            [ div
-                (oldStyle (terminal_text ++ typedStrings))
+        [ header (oldStyle terminalWindowHeader) [ redButton, greenButton, yellowButton ]
+        , div (oldStyle terminalWindowBody)
+            [ div (oldStyle (terminal_text ++ typedStrings))
                 (takeLast 21 (List.concatMap renderResult history) ++ [ text ("> " ++ textInput) ])
             ]
         ]
 
 
+redButton =
+    div (oldStyle (red_btn ++ terminalWindowButton)) []
+
+
+greenButton =
+    div (oldStyle (green_btn ++ terminalWindowButton)) []
+
+
+yellowButton =
+    div (oldStyle (yellow_btn ++ terminalWindowButton)) []
+
+
 example title codeText =
-    div [ onClick (ChangeText codeText) ]
+    div ([ onClick (ChangeText codeText) ] ++ oldStyle exampleStyle)
         [ span [] [ text title ]
         , pre [] [ code [] [ text codeText ] ]
         ]
 
 
 examples =
-    div []
+    div (oldStyle examplesStyle)
         [ div [] [ text "Try some examples!" ]
-        , example "true" "\\x y. x"
-        , example "false" "\\x y. y"
-        , example "if then else" "\\b t e. b t e"
+        , div []
+            [ text "Booleans"
+            , div []
+                [ example "true" "(\\x y. x)"
+                , example "false" "(\\x y. y)"
+                , example "if then else" "(\\b t e. b t e)"
+                ]
+            ]
+        , div []
+            [ text "Numbers"
+            , div []
+                [ example "zero" "(\\f x. x)"
+                , example "one" "(\\f x. f x)"
+                , example "two" "(\\f x. f (f x))"
+                , example "succ" "(\\n f x. f (n f x))"
+                , example "plus" "(\\m n f x. m f (n f x))"
+                ]
+            ]
         ]
+
+
+exampleStyle =
+    [ ( "background", "lightgray" )
+    ]
+
+
+examplesStyle =
+    [ ( "background", "#ABA9BF" )
+    , ( "margin", "0 auto" )
+    , ( "width", "800px" )
+    ]
 
 
 

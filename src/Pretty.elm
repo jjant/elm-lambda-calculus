@@ -18,7 +18,7 @@ viewBody : Expr -> Expr
 viewBody expr =
     case expr of
         Lam _ a ->
-            a
+            viewBody a
 
         x ->
             x

@@ -65,4 +65,4 @@ isValue e =
 
 getSteps : Expr -> List Expr
 getSteps e =
-    iterateWhile (not << isValue) stepEval e
+    iterateWhile (\a -> a /= stepEval a) stepEval e
