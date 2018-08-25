@@ -47,15 +47,15 @@ terminalWindowButton =
     ]
 
 
-red_btn =
+redBtn =
     [ ( "background-color", "#E75448" ) ]
 
 
-green_btn =
+greenBtn =
     [ ( "background-color", "#3BB662" ) ]
 
 
-yellow_btn =
+yellowBtn =
     [ ( "background-color", "#E5C30F" ) ]
 
 
@@ -176,15 +176,15 @@ terminal { textInput, history } =
 
 
 redButton =
-    div (oldStyle (red_btn ++ terminalWindowButton)) []
+    div (oldStyle (redBtn ++ terminalWindowButton)) []
 
 
 greenButton =
-    div (oldStyle (green_btn ++ terminalWindowButton)) []
+    div (oldStyle (greenBtn ++ terminalWindowButton)) []
 
 
 yellowButton =
-    div (oldStyle (yellow_btn ++ terminalWindowButton)) []
+    div (oldStyle (yellowBtn ++ terminalWindowButton)) []
 
 
 example title codeText =
