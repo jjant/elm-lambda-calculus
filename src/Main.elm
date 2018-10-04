@@ -2,8 +2,9 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
+import Editor
 import Html exposing (..)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, class)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Lambda exposing (Expr(..), Lit(..))
@@ -108,11 +109,12 @@ type alias Model =
 
 
 init =
-    ( { textInput = "", history = [] }, Cmd.none )
+    ( { textInput = "\\x.x", history = [] }, Cmd.none )
 
 
 type Msg
     = ChangeText String
+    | CodeChanged String
     | KeyPressed String
     | Delete
     | Submit
@@ -124,6 +126,9 @@ update msg model =
     case msg of
         ChangeText text ->
             ( { model | textInput = model.textInput ++ " " ++ text }, Cmd.none )
+
+        CodeChanged c ->
+            ( { model | textInput = c }, Cmd.none )
 
         KeyPressed t ->
             ( { model | textInput = model.textInput ++ t }, Cmd.none )
@@ -151,17 +156,40 @@ renderResult code =
 -- div [] [ text ("> " ++ code) ] :: (List.map (renderStep << Debug.toString) (parseAndSteps code))
 
 
-view model =
+view : Model -> Html Msg
+view { textInput } =
     let
         styles =
-            [ ( "display", "flex" )
-            , ( "align-items", "center" )
-            , ( "margin-top", "60px" )
+            [ -- ( "display", "flex" )
+              -- , ( "align-items", "center" )
+              ( "height", "100%" )
+            , ( "display", "grid" )
+            , ( "grid-template-columns", "1fr 1fr" )
+            , ( "grid-template-rows", "1fr 1fr" )
             ]
     in
         div (oldStyle styles)
-            [ terminal model
-            , examples
+            [ div [ class "try-grid-editor" ]
+                [ Editor.view
+                    [ Editor.id "main-editor"
+                    , Editor.value textInput
+                    , Editor.onChange CodeChanged
+                    ]
+                , div [ class "try-label" ] [ text "LAMBDA" ]
+                ]
+            , div [ class "try-grid-editor" ]
+                [ Editor.view [ Editor.readOnly ], div [ class "try-label" ] [ text "PRETTY PRINT" ] ]
+            , div [ class "try-grid-editor" ]
+                [ Editor.view [ Editor.readOnly ], div [ class "try-label" ] [ text "COMPILED" ] ]
+            , div [ class "try-grid-editor" ]
+                [ Editor.view
+                    [ Editor.value (String.join "\n" (process textInput))
+                    , Editor.readOnly
+                    ]
+                , div [ class "try-label" ] [ text "INTERPRETED" ]
+                ]
+
+            -- , examples
             ]
 
 
@@ -236,7 +264,11 @@ examplesStyle =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Browser.Events.onKeyDown keyDecoder
+    Sub.none
+
+
+
+-- Browser.Events.onKeyDown keyDecoder
 
 
 main : Program {} Model Msg
