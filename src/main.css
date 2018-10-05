@@ -19,6 +19,15 @@ img {
 	max-width: 200px;
 }
 
+.run {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	margin: 12px;
+	padding: 4px 22px;
+	border: 1px solid #d6d4d4;
+}
+
 .try-grid-editor {
 	position: relative;
 	overflow: auto;

@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Browser
 import Browser.Events
@@ -107,11 +107,19 @@ val =
 
 
 type alias Model =
-    { textInput : String, history : List String }
+    { textInput : String
+    , history : List String
+    , jsResult : String
+    }
 
 
 init =
-    ( { textInput = "(\\m n f x. m f (n f x)) (\\f x. f x) ((\\n f x. f (n f x)) (\\f x. f x))", history = [] }, Cmd.none )
+    ( { textInput = "(\\m n f x. m f (n f x)) (\\f x. f x) ((\\n f x. f (n f x)) (\\f x. f x))"
+      , history = []
+      , jsResult = "3"
+      }
+    , Cmd.none
+    )
 
 
 type Msg
@@ -121,16 +129,24 @@ type Msg
     | Delete
     | Submit
     | NoOp
+    | ResultFromJs String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ResultFromJs res ->
+            ( { model | jsResult = res }, Cmd.none )
+
         ChangeText text ->
             ( { model | textInput = model.textInput ++ " " ++ text }, Cmd.none )
 
         CodeChanged c ->
-            ( { model | textInput = c }, Cmd.none )
+            let
+                newModel =
+                    { model | textInput = c }
+            in
+                ( newModel, codeToJs <| compileHelp newModel.textInput )
 
         KeyPressed t ->
             ( { model | textInput = model.textInput ++ t }, Cmd.none )
@@ -158,13 +174,18 @@ renderResult code =
 -- div [] [ text ("> " ++ code) ] :: (List.map (renderStep << Debug.toString) (parseAndSteps code))
 
 
+compileHelp : String -> String
+compileHelp code =
+    LambdaParser.parseExpr code
+        |> Result.map Compiler.compile
+        |> Result.withDefault ""
+
+
 view : Model -> Html Msg
-view { textInput } =
+view model =
     let
         styles =
-            [ -- ( "display", "flex" )
-              -- , ( "align-items", "center" )
-              ( "height", "100%" )
+            [ ( "height", "100%" )
             , ( "display", "grid" )
             , ( "grid-template-columns", "1fr 1fr" )
             , ( "grid-template-rows", "1fr 1fr" )
@@ -174,7 +195,7 @@ view { textInput } =
             [ div [ class "try-grid-editor" ]
                 [ Editor.view
                     [ Editor.id "main-editor"
-                    , Editor.value textInput
+                    , Editor.value model.textInput
                     , Editor.onChange CodeChanged
                     ]
                 , div [ class "try-label" ] [ text "LAMBDA" ]
@@ -183,17 +204,15 @@ view { textInput } =
                 [ Editor.view [ Editor.readOnly ], div [ class "try-label" ] [ text "PRETTY PRINT" ] ]
             , div [ class "try-grid-editor" ]
                 [ Editor.view
-                    [ LambdaParser.parseExpr textInput
-                        |> Result.map Compiler.compile
-                        |> Result.withDefault ""
-                        |> Editor.value
+                    [ Editor.value (compileHelp model.textInput)
                     , Editor.readOnly
                     ]
                 , div [ class "try-label" ] [ text "COMPILED" ]
+                , div [ class "run" ] [ text ("Result: " ++ model.jsResult) ]
                 ]
             , div [ class "try-grid-editor" ]
                 [ Editor.view
-                    [ Editor.value (String.join "\n" (process textInput))
+                    [ Editor.value (String.join "\n" (process model.textInput))
                     , Editor.readOnly
                     ]
                 , div [ class "try-label" ] [ text "INTERPRETED" ]
@@ -274,11 +293,7 @@ examplesStyle =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
-
-
-
--- Browser.Events.onKeyDown keyDecoder
+    fromJs ResultFromJs
 
 
 main : Program {} Model Msg
@@ -291,40 +306,7 @@ main =
         }
 
 
-type Key
-    = Character Char
-    | Control String
+port codeToJs : String -> Cmd msg
 
 
-keyDecoder : Decode.Decoder Msg
-keyDecoder =
-    Decode.field "key" Decode.string
-        |> Decode.map (toMsg << toKey)
-
-
-toKey : String -> Key
-toKey string =
-    case String.uncons string of
-        Just ( char, "" ) ->
-            Character char
-
-        _ ->
-            Control string
-
-
-toMsg : Key -> Msg
-toMsg key =
-    case key of
-        Character c ->
-            KeyPressed (String.fromChar c)
-
-        Control c ->
-            case c of
-                "Enter" ->
-                    Submit
-
-                "Backspace" ->
-                    Delete
-
-                _ ->
-                    NoOp
+port fromJs : (String -> msg) -> Sub msg
