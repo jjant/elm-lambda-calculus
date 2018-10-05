@@ -8,9 +8,11 @@ import Html.Attributes exposing (style, class)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Lambda exposing (Expr(..), Lit(..))
+import LambdaParser
 import Eval exposing (getSteps)
 import CmdLine exposing (..)
 import Util exposing (takeLast)
+import Compiler
 
 
 terminalWindow =
@@ -109,7 +111,7 @@ type alias Model =
 
 
 init =
-    ( { textInput = "\\x.x", history = [] }, Cmd.none )
+    ( { textInput = "(\\m n f x. m f (n f x)) (\\f x. f x) ((\\n f x. f (n f x)) (\\f x. f x))", history = [] }, Cmd.none )
 
 
 type Msg
@@ -180,7 +182,15 @@ view { textInput } =
             , div [ class "try-grid-editor" ]
                 [ Editor.view [ Editor.readOnly ], div [ class "try-label" ] [ text "PRETTY PRINT" ] ]
             , div [ class "try-grid-editor" ]
-                [ Editor.view [ Editor.readOnly ], div [ class "try-label" ] [ text "COMPILED" ] ]
+                [ Editor.view
+                    [ LambdaParser.parseExpr textInput
+                        |> Result.map Compiler.compile
+                        |> Result.withDefault ""
+                        |> Editor.value
+                    , Editor.readOnly
+                    ]
+                , div [ class "try-label" ] [ text "COMPILED" ]
+                ]
             , div [ class "try-grid-editor" ]
                 [ Editor.view
                     [ Editor.value (String.join "\n" (process textInput))
