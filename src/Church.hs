@@ -6,7 +6,7 @@ true = \x y -> x
 false :: a -> b -> b
 false = \x y -> y
 
-or_       = (\b1 b2 -> b1 true b2 )
+or_ = (\b1 b2 -> b1 true b2)
 
 not_ = (\x -> x false true)
 
@@ -24,10 +24,11 @@ succ_ = \n f x -> f (n f x)
 
 iszero = \n -> n (\x -> false) true
 
-----
+plus = \m n f x -> m f (n f x)
 
+----
 toNumber :: ((Int -> Int) -> Int -> t) -> t
-toNumber x = x (+1) 0
+toNumber x = x (+ 1) 0
 
 toBool :: (Bool -> Bool -> t) -> t
 toBool x = x True False
